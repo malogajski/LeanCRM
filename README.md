@@ -1,6 +1,6 @@
 # LeanCRM - Portfolio CRM REST API
 
-A complete Laravel 8 CRM REST API built as a portfolio demonstration. This API provides comprehensive customer relationship management functionality with multi-tenant architecture, role-based permissions, and modern Laravel features.
+A complete Laravel 12 CRM REST API built as a portfolio demonstration. This API provides comprehensive customer relationship management functionality with multi-tenant architecture, role-based permissions, and modern Laravel features.
 
 ## 🚀 Features
 
@@ -13,13 +13,15 @@ A complete Laravel 8 CRM REST API built as a portfolio demonstration. This API p
 - **Event System**: Deal stage change events with listeners and jobs
 - **API Documentation**: Auto-generated documentation with Scramble
 - **Testing**: Comprehensive feature tests included
+- **Demo Data**: Rich seeded data for testing and demonstration
+- **Access Control**: Configurable read/write permissions for public demos
 
 ## 📋 Requirements
 
-- PHP 8.0+
+- PHP 8.2+
 - Composer
 - MySQL/PostgreSQL
-- Laravel 8.x
+- Laravel 12.x
 - Node.js & NPM (for frontend assets, if needed)
 
 ## 🛠 Installation & Setup
@@ -62,6 +64,101 @@ A complete Laravel 8 CRM REST API built as a portfolio demonstration. This API p
    ```
 
 The API will be available at `http://localhost:8000`
+
+## 🗄️ Demo Data & Seeders
+
+The application comes with comprehensive seeders that create realistic demo data for testing and demonstration purposes.
+
+### Available Demo Users
+
+After running `php artisan migrate --seed`, you can use these demo accounts:
+
+| Email | Password | Role | Description |
+|-------|----------|------|-------------|
+| `admin@team1.com` | `password123` | Admin | Team 1 Administrator |
+| `admin@team2.com` | `password123` | Admin | Team 2 Administrator |
+| `demo@leancrm.com` | `demo123` | Sales Rep | Demo Sales Representative |
+| `manager@leancrm.com` | `demo123` | Manager | Demo Sales Manager |
+
+### Seeded Data Includes
+
+- **9 Users**: Admins, demo users, and additional team members
+- **30 Companies**: Realistic companies with proper contact details
+- **70+ Contacts**: Individual contacts linked to companies
+- **80+ Deals**: Sales opportunities in various pipeline stages ($15k-$75k range)
+- **200+ Activities**: Calls, meetings, emails, tasks, and follow-ups
+- **150+ Notes**: Realistic CRM notes attached to deals
+
+### Demo Data Structure
+
+The seeders create:
+- **5 Featured Demo Companies**: TechCorp Solutions, Global Marketing Inc, Startup Ventures LLC, etc.
+- **Deal Pipeline Examples**: Prospects, qualified leads, proposals, won/lost deals
+- **Realistic CRM Activities**: Discovery calls, proposal presentations, contract negotiations
+- **Multi-team Isolation**: Data properly separated between Team 1 and Team 2
+
+### Running Seeders
+
+```bash
+# Seed with existing database
+php artisan db:seed
+
+# Fresh migration with seeding (recommended for demo setup)
+php artisan migrate:fresh --seed
+
+# Run specific seeder
+php artisan db:seed --class=CompanySeeder
+```
+
+## 🔒 Access Control & Public Demo Mode
+
+The API includes configurable read/write access controls, perfect for public demonstrations while maintaining security.
+
+### Environment Configuration
+
+Add these variables to your `.env` file:
+
+```env
+# CRM Access Control
+CRM_READ_ENABLED=true
+CRM_WRITE_ENABLED=true
+CRM_PUBLIC_DEMO_MODE=false
+```
+
+### Configuration Options
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CRM_READ_ENABLED` | `true` | Enable/disable GET endpoints |
+| `CRM_WRITE_ENABLED` | `true` | Enable/disable POST/PUT/DELETE endpoints |
+| `CRM_PUBLIC_DEMO_MODE` | `false` | Special mode for public demonstrations |
+
+### Usage Scenarios
+
+**For Public Demo (Read-Only)**:
+```env
+CRM_READ_ENABLED=true
+CRM_WRITE_ENABLED=false
+CRM_PUBLIC_DEMO_MODE=true
+```
+
+**For Maintenance Mode**:
+```env
+CRM_READ_ENABLED=false
+CRM_WRITE_ENABLED=false
+CRM_PUBLIC_DEMO_MODE=false
+```
+
+**For Full Access**:
+```env
+CRM_READ_ENABLED=true
+CRM_WRITE_ENABLED=true
+CRM_PUBLIC_DEMO_MODE=false
+```
+
+When access is disabled, the API returns `503 Service Unavailable` with appropriate messages:
+- Demo mode: "Write operations are disabled in demo mode. This is a read-only demonstration."
+- Maintenance mode: "This service is temporarily unavailable for maintenance."
 
 ## 📖 API Documentation
 
@@ -205,26 +302,53 @@ When a deal's stage changes, the system triggers:
 
 ## 🧪 Testing
 
-Run the feature tests to ensure everything is working correctly:
+Run the comprehensive test suite to ensure everything is working correctly:
 
 ```bash
 # Run all tests
 php artisan test
 
 # Run specific test file
-php artisan test tests/Feature/Feature/DealApiTest.php
+php artisan test tests/Feature/ApiEndpointsTest.php
 
 # Run tests with coverage (requires Xdebug)
 php artisan test --coverage
+
+# Run tests with detailed output
+php artisan test --verbose
 ```
 
-The test suite includes:
-- Authentication flow testing
-- CRUD operations for all resources
-- Multi-tenant isolation verification
-- Event system testing
-- Query filtering and sorting
-- Validation testing
+### Test Coverage
+
+The test suite includes **139+ assertions** covering:
+
+- **Authentication Flow**: Registration, login, logout, and token validation
+- **CRUD Operations**: Complete create, read, update, delete for all resources
+- **Multi-tenant Isolation**: Ensures teams can't access each other's data
+- **Authorization**: Policy-based access control verification  
+- **Query Features**: Filtering, sorting, pagination, and includes
+- **Validation**: Request validation for all endpoints
+- **API Response Format**: Proper JSON structure and status codes
+- **Error Handling**: 401 unauthorized, 403 forbidden, 404 not found responses
+
+### Test Results Example
+
+```
+PASS  Tests\Feature\ApiEndpointsTest
+✓ test authentication endpoints                                                                                                           
+✓ test companies crud endpoints                                                                                                          
+✓ test contacts crud endpoints                                                                                                           
+✓ test deals crud endpoints                                                                                                              
+✓ test activities crud endpoints                                                                                                         
+✓ test notes crud endpoints                                                                                                              
+✓ test unauthorized access returns 401                                                                                                   
+✓ test multi tenancy isolation                                                                                                           
+✓ test filtering and sorting                                                                                                             
+
+Tests:  9 passed
+Assertions: 139 passed
+Time: 2.34s
+```
 
 ## 📁 Project Structure
 

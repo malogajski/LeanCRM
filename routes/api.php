@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Authentication routes
-Route::prefix('auth')->group(function () {
+Route::prefix('auth')->middleware('crm.access')->group(function () {
     Route::post('register', [AuthController::class, 'register']);
     Route::post('login', [AuthController::class, 'login']);
     
@@ -31,7 +31,7 @@ Route::prefix('auth')->group(function () {
 });
 
 // Protected routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'crm.access'])->group(function () {
     // Companies
     Route::apiResource('companies', CompanyController::class);
     

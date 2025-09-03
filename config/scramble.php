@@ -30,7 +30,7 @@ return [
         'description' => '
 # LeanCRM REST API Documentation
 
-Welcome to the LeanCRM API documentation. This is a complete CRM REST API built with Laravel 8, featuring:
+Welcome to the LeanCRM API documentation. This is a complete CRM REST API built with Laravel 12, featuring:
 
 ## Key Features
 - **Multi-tenant Architecture**: Complete team-based data isolation

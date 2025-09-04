@@ -45,8 +45,7 @@ class DealPolicy
      */
     public function delete(User $user, Deal $deal): bool
     {
-        return $user->team_id === $deal->team_id && 
-               ($user->id === $deal->user_id || $user->hasRole('admin'));
+        return $user->team_id === $deal->team_id;
     }
 
     /**
@@ -54,7 +53,7 @@ class DealPolicy
      */
     public function restore(User $user, Deal $deal): bool
     {
-        return $user->team_id === $deal->team_id && $user->hasRole('admin');
+        return $user->team_id === $deal->team_id;
     }
 
     /**
@@ -62,6 +61,6 @@ class DealPolicy
      */
     public function forceDelete(User $user, Deal $deal): bool
     {
-        return $user->team_id === $deal->team_id && $user->hasRole('admin');
+        return $user->team_id === $deal->team_id;
     }
 }

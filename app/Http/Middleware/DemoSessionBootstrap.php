@@ -12,8 +12,12 @@ class DemoSessionBootstrap
 {
     public function handle(Request $request, Closure $next)
     {
+        // Debug log
+        \Log::info('DemoSessionBootstrap middleware called for: ' . $request->path());
+
         // Only apply demo mode if APP_DEMO is true
         if (!config('app.demo', false)) {
+            \Log::info('APP_DEMO is false, skipping demo mode');
             return $next($request);
         }
 
@@ -56,6 +60,16 @@ class DemoSessionBootstrap
         // Switch to demo database for this request
         $this->switchToDemoDatabase($dbPath);
 
+        // Debug: Check if we have the right token in SQLite
+        $token = $request->bearerToken();
+        if ($token) {
+            $hashedToken = hash('sha256', $token);
+            $tokenExists = DB::table('personal_access_tokens')
+                ->where('token', $hashedToken)
+                ->exists();
+            \Log::info("Token exists in SQLite DB: " . ($tokenExists ? 'YES' : 'NO'));
+        }
+
         return $next($request);
     }
 
@@ -89,6 +103,15 @@ class DemoSessionBootstrap
 
         // Seed demo data
         $this->seedDemoData();
+    }
+
+    private function runLaravelMigrations(): void
+    {
+        // Run Laravel migrations on demo database
+        \Artisan::call('migrate', [
+            '--database' => 'demo_temp',
+            '--force' => true
+        ]);
     }
 
     private function runMigrationsOnDemoDb(): void
@@ -130,6 +153,7 @@ class DemoSessionBootstrap
                 industry VARCHAR(255) NULL,
                 size VARCHAR(50) NULL,
                 notes TEXT NULL,
+                team_id INTEGER DEFAULT 1,
                 created_at TIMESTAMP NULL,
                 updated_at TIMESTAMP NULL
             )',
@@ -142,6 +166,7 @@ class DemoSessionBootstrap
                 position VARCHAR(255) NULL,
                 company_id INTEGER NULL,
                 notes TEXT NULL,
+                team_id INTEGER DEFAULT 1,
                 created_at TIMESTAMP NULL,
                 updated_at TIMESTAMP NULL,
                 FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE SET NULL
@@ -150,16 +175,19 @@ class DemoSessionBootstrap
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title VARCHAR(255) NOT NULL,
                 description TEXT NULL,
-                value DECIMAL(15,2) NULL,
+                amount DECIMAL(15,2) NULL,
                 stage VARCHAR(100) NOT NULL DEFAULT "lead",
                 probability INTEGER DEFAULT 0,
                 expected_close_date DATE NULL,
                 company_id INTEGER NULL,
                 contact_id INTEGER NULL,
+                user_id INTEGER NULL,
+                team_id INTEGER DEFAULT 1,
                 created_at TIMESTAMP NULL,
                 updated_at TIMESTAMP NULL,
                 FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE SET NULL,
-                FOREIGN KEY (contact_id) REFERENCES contacts (id) ON DELETE SET NULL
+                FOREIGN KEY (contact_id) REFERENCES contacts (id) ON DELETE SET NULL,
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
             )',
             'CREATE TABLE activities (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -171,6 +199,7 @@ class DemoSessionBootstrap
                 company_id INTEGER NULL,
                 contact_id INTEGER NULL,
                 deal_id INTEGER NULL,
+                team_id INTEGER DEFAULT 1,
                 created_at TIMESTAMP NULL,
                 updated_at TIMESTAMP NULL,
                 FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE SET NULL,
@@ -183,11 +212,51 @@ class DemoSessionBootstrap
                 company_id INTEGER NULL,
                 contact_id INTEGER NULL,
                 deal_id INTEGER NULL,
+                team_id INTEGER DEFAULT 1,
                 created_at TIMESTAMP NULL,
                 updated_at TIMESTAMP NULL,
                 FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE SET NULL,
                 FOREIGN KEY (contact_id) REFERENCES contacts (id) ON DELETE SET NULL,
                 FOREIGN KEY (deal_id) REFERENCES deals (id) ON DELETE SET NULL
+            )',
+            'CREATE TABLE permissions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name VARCHAR(255) NOT NULL,
+                guard_name VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP NULL,
+                updated_at TIMESTAMP NULL,
+                UNIQUE(name, guard_name)
+            )',
+            'CREATE TABLE roles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                team_id INTEGER NULL,
+                name VARCHAR(255) NOT NULL,
+                guard_name VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP NULL,
+                updated_at TIMESTAMP NULL,
+                UNIQUE(team_id, name, guard_name)
+            )',
+            'CREATE TABLE model_has_permissions (
+                permission_id INTEGER NOT NULL,
+                model_type VARCHAR(255) NOT NULL,
+                model_id INTEGER NOT NULL,
+                PRIMARY KEY (permission_id, model_id, model_type),
+                FOREIGN KEY (permission_id) REFERENCES permissions (id) ON DELETE CASCADE
+            )',
+            'CREATE TABLE model_has_roles (
+                role_id INTEGER NOT NULL,
+                model_type VARCHAR(255) NOT NULL,
+                model_id INTEGER NOT NULL,
+                team_id INTEGER NULL,
+                PRIMARY KEY (role_id, model_id, model_type),
+                FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE
+            )',
+            'CREATE TABLE role_has_permissions (
+                permission_id INTEGER NOT NULL,
+                role_id INTEGER NOT NULL,
+                PRIMARY KEY (permission_id, role_id),
+                FOREIGN KEY (permission_id) REFERENCES permissions (id) ON DELETE CASCADE,
+                FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE
             )',
         ];
 
@@ -206,6 +275,7 @@ class DemoSessionBootstrap
                 'phone'      => '+1 555-0123',
                 'industry'   => 'Technology',
                 'size'       => '50-200',
+                'team_id'    => 1,
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ],
@@ -215,6 +285,7 @@ class DemoSessionBootstrap
                 'phone'      => '+1 555-0456',
                 'industry'   => 'Consulting',
                 'size'       => '10-50',
+                'team_id'    => 1,
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ],
@@ -229,6 +300,7 @@ class DemoSessionBootstrap
                 'phone'      => '+1 555-0789',
                 'position'   => 'CEO',
                 'company_id' => 1,
+                'team_id'    => 1,
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ],
@@ -239,6 +311,7 @@ class DemoSessionBootstrap
                 'phone'      => '+1 555-0987',
                 'position'   => 'CTO',
                 'company_id' => 2,
+                'team_id'    => 1,
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ],
@@ -249,12 +322,14 @@ class DemoSessionBootstrap
             [
                 'title'               => 'Enterprise Software License',
                 'description'         => 'Annual software license renewal',
-                'value'               => 25000.00,
+                'amount'              => 25000.00,
                 'stage'               => 'negotiation',
                 'probability'         => 75,
                 'expected_close_date' => Carbon::now()->addDays(30),
                 'company_id'          => 1,
                 'contact_id'          => 1,
+                'user_id'             => null,
+                'team_id'             => 1,
                 'created_at'          => Carbon::now(),
                 'updated_at'          => Carbon::now(),
             ],

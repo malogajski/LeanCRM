@@ -23,6 +23,7 @@ Route::prefix('auth')
     });
 
 // Protected routes - standard API rate limiting
+// Note: DemoSessionBootstrap runs first via bootstrap/app.php configuration
 Route::middleware('auth:sanctum')
     ->middleware('crm.access')
     ->middleware('throttle:api')

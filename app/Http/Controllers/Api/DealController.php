@@ -19,7 +19,7 @@ class DealController extends Controller
 {
     public function __construct()
     {
-        $this->authorizeResource(Deal::class, 'deal');
+        $this->middleware('auth:sanctum');
     }
 
     /**
@@ -41,7 +41,7 @@ class DealController extends Controller
     public function index(): AnonymousResourceCollection
     {
         $deals = QueryBuilder::for(Deal::class)
-            ->forTeam(auth()->user()->team_id)
+            ->where('team_id', auth()->user()->team_id)
             ->allowedFilters(['stage', 'user_id', 'company_id', 'contact_id'])
             ->allowedSorts(['title', 'amount', 'stage', 'expected_close_date', 'created_at', 'updated_at'])
             ->allowedIncludes(['company', 'contact', 'user'])

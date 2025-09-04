@@ -11,9 +11,10 @@ class DealStageChanged
     use Dispatchable, SerializesModels;
 
     public function __construct(
-        public Deal $deal,
+        public Deal   $deal,
         public string $oldStage,
         public string $newStage
-    ) {
+    )
+    {
     }
 }

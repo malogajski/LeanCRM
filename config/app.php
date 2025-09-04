@@ -123,4 +123,17 @@ return [
         'store'  => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Demo Mode
+    |--------------------------------------------------------------------------
+    |
+    | When demo mode is enabled, the application will create isolated SQLite
+    | databases for each user session, allowing safe demo usage without
+    | affecting the main database.
+    |
+    */
+
+    'demo' => (bool)env('APP_DEMO', false),
+
 ];

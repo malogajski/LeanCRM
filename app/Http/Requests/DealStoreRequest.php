@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Deal;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class DealStoreRequest extends FormRequest
@@ -18,7 +19,7 @@ class DealStoreRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -31,17 +32,6 @@ class DealStoreRequest extends FormRequest
             'stage'               => 'required|in:prospect,qualified,proposal,won,lost',
             'expected_close_date' => 'nullable|date|after:today',
         ];
-    }
-
-    /**
-     * Prepare the data for validation.
-     */
-    protected function prepareForValidation(): void
-    {
-        $this->merge([
-            'team_id' => $this->user()->team_id,
-            'user_id' => $this->user()->id,
-        ]);
     }
 
     /**
@@ -58,5 +48,16 @@ class DealStoreRequest extends FormRequest
             'stage.in'                  => 'Invalid deal stage. Must be one of: prospect, qualified, proposal, won, lost',
             'expected_close_date.after' => 'Expected close date must be in the future',
         ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'team_id' => $this->user()->team_id,
+            'user_id' => $this->user()->id,
+        ]);
     }
 }

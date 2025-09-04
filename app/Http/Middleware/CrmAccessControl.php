@@ -11,7 +11,7 @@ class CrmAccessControl
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param Closure(Request): (Response) $next
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -19,21 +19,21 @@ class CrmAccessControl
         if (!config('crm.read_enabled') && $request->isMethod('GET')) {
             return response()->json([
                 'message' => config('crm.disabled_message'),
-                'status' => 'read_disabled'
+                'status'  => 'read_disabled',
             ], 503);
         }
 
         // Check if writes are disabled
         $writeMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
         if (!config('crm.write_enabled') && in_array($request->method(), $writeMethods)) {
-            $message = config('crm.public_demo_mode') 
+            $message = config('crm.public_demo_mode')
                 ? config('crm.demo_write_disabled_message')
                 : config('crm.disabled_message');
 
             return response()->json([
-                'message' => $message,
-                'status' => 'write_disabled',
-                'demo_mode' => config('crm.public_demo_mode')
+                'message'   => $message,
+                'status'    => 'write_disabled',
+                'demo_mode' => config('crm.public_demo_mode'),
             ], 503);
         }
 
